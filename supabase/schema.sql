@@ -33,7 +33,7 @@ create policy "clientes enviam briefing" on public.briefings
 -- Pasta privada para fotos, logotipos e PDFs (até 20 MB por arquivo)
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('briefing-files', 'briefing-files', false, 20971520,
-  array['image/jpeg','image/png','image/webp','image/gif','application/pdf','video/mp4'])
+  array['image/jpeg','image/png','image/webp','image/gif','image/heic','image/heif','application/pdf','video/mp4'])
 on conflict (id) do update set file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 

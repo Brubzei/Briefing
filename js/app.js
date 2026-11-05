@@ -60,7 +60,7 @@ if("tdh".includes(x.t))b=`<input type="${{t:"text",d:"date",h:"time"}[x.t]}" dat
 else if(x.t=="a")b=`<textarea data-k="${k}">${esc(v)}</textarea>`;
 else if("scm".includes(x.t))b=dd(k,x.o,v,x.t=="m",x.t=="m"?"Selecione uma ou mais opções":"Selecione uma opção");
 
-else if(x.t=="f")b=`<div class="fl"><label class="chip">+ Escolher arquivos<input type="file" multiple data-f="${k}"></label></div>`+(v||[]).map((n,j)=>`<div class="fi">${esc(n)} <button type="button" data-rm="${k}|${j}">remover</button></div>`).join("");
+else if(x.t=="f")b=`<div class="fl"><label class="chip">+ Escolher arquivos<input type="file" multiple accept="image/*,application/pdf,video/mp4" data-f="${k}"></label></div>`+(v||[]).map((n,j)=>`<div class="fi">${esc(n)} <button type="button" data-rm="${k}|${j}">remover</button></div>`).join("");
 return`<div class="f${bad&&inv(x,v)?" bad":""}">${L}${b}</div>`}
 function stepHTML(k){
 if(k=="ev"){const bad=msg&&!D.ev;return`<div class="f${bad?" bad":""}"><span class="lb">Tipo de evento <s>*</s></span><div class="dd${OPEN==="ev"?" open":""}${D.ev?" has":""}"><button type="button" class="ddb" data-dd="ev" aria-haspopup="listbox" aria-expanded="${OPEN==="ev"?"true":"false"}"><span>${D.ev?esc(D.ev):"Selecione o tipo de evento"}</span><span class="ar">▾</span></button><ul class="ddl" role="listbox">${EV.map(([n,g])=>`<li><button type="button" role="option" class="ddo${D.ev===n?" on":""}" data-ev="${n}|${g}">${n}</button></li>`).join("")}</ul></div></div>`+(D.ev=="Outro evento"?`<div class="f"><span class="lb">Descreva o tipo de comemoração</span><input type="text" data-k="eo" value="${esc(D.eo)}"></div>`:"")}
@@ -84,7 +84,7 @@ if(k=="ge"){if(GE.some((x,i)=>x.r&&!(D["ge."+i]||"").trim()))return"Preencha os 
 if(k=="rv")return[0,1,2].every(i=>D["cf"+i])?"":"Marque as três confirmações para enviar.";return""}
 document.addEventListener("click",e=>{if(OPEN&&!e.target.closest(".dd")){OPEN=0;render()}const t=e.target.closest("button,label");if(!t)return;
 if(t.dataset.ev){const[n,g]=t.dataset.ev.split("|");D.ev=n;D.g=g;msg="";OPEN=0;save();render()}
-else if(t.dataset.dd){OPEN=OPEN===t.dataset.dd?0:t.dataset.dd;render()}
+else if(t.dataset.dd){OPEN=OPEN===t.dataset.dd?0:t.dataset.dd;render();const l=document.querySelector(".dd.open .ddl");if(l)l.scrollIntoView({block:"nearest",behavior:"smooth"})}
 else if(t.dataset.v!==undefined){const k=t.dataset.k;if(t.dataset.m=="1"){const a=D[k]||[],v=t.dataset.v;D[k]=a.includes(v)?a.filter(z=>z!=v):a.concat(v)}else{D[k]=t.dataset.v;OPEN=0}save();render()}
 else if(t.dataset.rm){const[k,j]=t.dataset.rm.split("|");D[k].splice(+j,1);(F[k]||[]).splice(+j,1);save();render()}
 else if(t.dataset.go){st=+t.dataset.go;msg="";save();render();scrollTo(0,0)}
@@ -95,12 +95,14 @@ st++;save();render();scrollTo(0,0)}
 else if(t.id=="cp"){try{navigator.clipboard.writeText(txt());t.textContent="Resumo copiado"}catch(x){t.textContent="Não foi possível copiar"}}});
 document.addEventListener("input",e=>{const el=e.target;if(el.dataset.kd=="p"){const c=el.value.replace(/\D/g,"");if(c!=el.value)el.value=c}if(el.dataset.k&&!el.dataset.v){D[el.dataset.k]=el.type=="checkbox"?el.checked:el.value;save()}});
 document.addEventListener("change",e=>{const el=e.target;if(el.dataset.f){const k=el.dataset.f,cur=F[k]||[];let m="";
-const ok=[...el.files].filter(f=>{if(!OK_T.includes(f.type)){m="Formato não aceito: "+f.name+". Use imagens (JPG, PNG, WEBP, GIF), PDF ou vídeo MP4.";return false}if(f.size>MAXB){m=f.name+" passa de 20 MB.";return false}return true});
+const ok=[...el.files].filter(f=>{if(!OK_T.includes(mt(f))){m="Formato não aceito: "+f.name+". Use imagens (JPG, PNG, WEBP, GIF, HEIC), PDF ou vídeo MP4.";return false}if(f.size>MAXB){m=f.name+" passa de 20 MB.";return false}return true});
 if(cur.length+ok.length>MAXF){m="O limite é de "+MAXF+" arquivos.";ok.length=Math.max(0,MAXF-cur.length)}
 F[k]=cur.concat(ok);D[k]=F[k].map(f=>f.name);msg=m;save();render()}});
 
 /* ===== Envio para o Supabase ===== */
-const OK_T=["image/jpeg","image/png","image/webp","image/gif","application/pdf","video/mp4"],MAXB=20*1024*1024,MAXF=15;
+const OK_T=["image/jpeg","image/png","image/webp","image/gif","image/heic","image/heif","application/pdf","video/mp4"],MAXB=20*1024*1024,MAXF=15;
+const MT={jpg:"image/jpeg",jpeg:"image/jpeg",png:"image/png",webp:"image/webp",gif:"image/gif",heic:"image/heic",heif:"image/heif",pdf:"application/pdf",mp4:"video/mp4"};
+const mt=f=>f.type||MT[f.name.split(".").pop().toLowerCase()]||"";
 function sbc(){const c=window.BRIEFING_CONFIG||{};if(!c.SUPABASE_URL||c.SUPABASE_URL.includes("SEU-PROJETO")||!window.supabase)return null;return window.supabase.createClient(c.SUPABASE_URL,c.SUPABASE_ANON_KEY)}
 async function send(){
 if(SENDING)return;
@@ -111,8 +113,8 @@ SENDING=1;msg="";render();
 const id=crypto.randomUUID(),files=[];
 try{
 for(const f of(F[fk]||[])){const safe=f.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^\w.-]+/g,"_"),path=id+"/"+files.length+"-"+safe;
-const u=await sb.storage.from("briefing-files").upload(path,f,{contentType:f.type,upsert:false});if(u.error)throw u.error;
-files.push({categoria:"Estilo e referências",nome:f.name,caminho:path,tipo:f.type,tamanho:f.size})}
+const u=await sb.storage.from("briefing-files").upload(path,f,{contentType:mt(f),upsert:false});if(u.error)throw u.error;
+files.push({categoria:"Estilo e referências",nome:f.name,caminho:path,tipo:mt(f),tamanho:f.size})}
 const answers={Evento:Object.assign({"Tipo de evento":D.ev},D.eo?{"Descrição":D.eo}:{})};
 STEPS.slice(1,7).forEach(([k,nm])=>{const r=rows(k);if(r.length)answers[nm]=Object.fromEntries(r)});
 const row={id,event_type:D.ev,event_group:D.g,event_name:D["ge.3"]||null,event_date:D["ge.4"]||null,client_name:D["ge.0"].trim(),client_email:D["ge.1"].trim(),client_whatsapp:D["ge.2"].trim(),answers,files,features:D["cv.11"]||[],extra_services:(D.g=="c"&&D["ec.5"]=="Sim")?["Orçamento de monograma"]:[],consent_accepted:true};
